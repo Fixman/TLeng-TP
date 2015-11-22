@@ -1,7 +1,7 @@
 all: literal
 
 literal.tab.c literal.tab.h: literal.y
-	bison -d literal.y
+	bison --verbose -d literal.y
 
 lex.yy.c: literal.tab.h literal.l
 	flex literal.l

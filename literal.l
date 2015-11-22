@@ -10,10 +10,14 @@
 
 %%
 
+"\n" { return T_ENDLINE; }
+
 "("	{ return T_OPENPAREN; }
 ")" { return T_CLOSEPAREN; }
 "/" { return T_DIV; }
-"[a-zA-Z0-9]" { return T_ID; }
+"+" { return T_SUM; }
+
+[a-zA-Z0-9] { return T_ID; }
 
 %%
 
