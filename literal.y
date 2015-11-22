@@ -1,6 +1,7 @@
 %{
 
 #include <stdio.h>
+#include <stdlib.h>
 
 extern int yylex();
 extern int yyparse();
@@ -25,3 +26,11 @@ E:    F T_DIV E { printf("(frac $1 $3)"); }
 F:    T_OPENPAREN E T_CLOSEPAREN { printf("($2)"); }
 	| T_ID
 ;
+
+%%
+
+void yyerror(const char* s) {
+	fprintf(stderr, "Parse error: %s\n", s);
+	exit(1);
+}
+
