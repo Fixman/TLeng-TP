@@ -18,11 +18,10 @@ void yyerror(const char *s);
 
 %%
 
-E:
-	| F T_DIV E { printf("(frac $1 $3)"); }
+E:    F T_DIV E { printf("(frac $1 $3)"); }
 	| F
 ;
 
-F:
-	| T_OPENPAREN E T_CLOSEPAREN { printf("($2)"); }
+F:    T_OPENPAREN E T_CLOSEPAREN { printf("($2)"); }
+	| T_ID
 ;
