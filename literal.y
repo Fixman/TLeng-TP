@@ -29,8 +29,10 @@ typedef struct Transform Operation[2];
 
 //const struct Transform idTransform = {.dx = 0, .dy = 0, .ds = 1};
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
-Operation caret = {idTransform, (struct Transform) {.dx = 6, .dy = -10, .ds = .6}};
+Operation divide = {(struct Transform) {.dx = 0, .dy = -5, .ds = .8}, (struct Transform) {.dx = 0, .dy = 5, .ds = .8}};
 Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
+Operation caret = {idTransform, (struct Transform) {.dx = 6, .dy = -10, .ds = .6}};
+Operation under = {idTransform, (struct Transform) {.dx = 6, .dy = 10, .ds = .6}};
 
 YYSTYPE buildToken(char c);
 YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b);
@@ -56,15 +58,19 @@ init: e T_ENDLINE
 	exit(0);
 }
 
-e:    f e { $$ = buildExpression(concat, $1, $2); }
+e:	  f T_DIV e { $$ = buildExpression(divide, $1, $3); }
 	| f
 
-f:    g T_CARET g { $$ = buildExpression(caret, $1, $3); }
+f:	  g f { $$ = buildExpression(concat, $1, $2); }
 	| g
 
-g:    id
+g:	  h T_CARET h { $$ = buildExpression(caret, $1, $3); }
+	| h T_UNDER h { $$ = buildExpression(under, $1, $3); }
+	| h
 
-id:   T_ID { $$ = buildToken(yytext[0]); }
+h:	  T_OPENPAREN e T_CLOSEPAREN
+	| T_OPENBRACKET e T_CLOSEBRACKET { $$ = $2; }
+	| T_ID { $$ = buildToken(yytext[0]); }
 
 %%
 
@@ -103,14 +109,15 @@ void printBlock(struct Transform t, struct Expression *e, int tab)
 	printTabs(tab); printf("</g>");
 }
 
-void printExpression(YYSTYPE q, int tab)
+void printExpression(YYSTYPE q, double *x, double *y, double *s, int tab)
 {
 	if (q->c != '\0')
 	{
 		assert(q->left == NULL && q->right == NULL);
 
 		printTabs(tab);
-		printf("<text>%c</text>\n", q->c);
+		printf("<text x="%.2f" y=".%2f" transform=\"scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
+		*x += *s;
 	}
 	else
 	{
@@ -128,7 +135,8 @@ void printSVG(YYSTYPE q)
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
 	puts("<g transform=\"translate(0, 200) scale(10)\" font-family=\"Courier\">");
 
-	printExpression(q, 0);
+	double x = 0, y = 0, s = 1;
+	printExpression(q, &x, &y, &s, 0);
 
 	puts("</g>");
 	puts("</svg>");
