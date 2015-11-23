@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 struct Transform
 {
@@ -28,11 +29,13 @@ typedef struct Transform Operation[2];
 
 //const struct Transform idTransform = {.dx = 0, .dy = 0, .ds = 1};
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
-Operation caret = {idTransform, (struct Transform) {.dx = 1, .dy = 1, .ds = .75}};
+Operation caret = {idTransform, (struct Transform) {.dx = 6, .dy = -10, .ds = .6}};
+Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
 
 YYSTYPE buildToken(char c);
 YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b);
-void printExpression(YYSTYPE e);
+void printExpression(YYSTYPE q, int tab);
+void printSVG(YYSTYPE e);
 
 void yyerror(const char *s);
 %}
@@ -49,14 +52,17 @@ void yyerror(const char *s);
 
 init: e T_ENDLINE
 {
-	printExpression($$);
+	printSVG($$);
 	exit(0);
 }
 
-e:	  f T_CARET e { $$ = buildExpression(caret, $1, $3); }
+e:    f e { $$ = buildExpression(concat, $1, $2); }
 	| f
 
-f:	  id
+f:    g T_CARET g { $$ = buildExpression(caret, $1, $3); }
+	| g
+
+g:    id
 
 id:   T_ID { $$ = buildToken(yytext[0]); }
 
@@ -90,31 +96,42 @@ void printTabs(int tab)
 		printf("\t");
 }
 
-void printExpression(YYSTYPE q)
+void printBlock(struct Transform t, struct Expression *e, int tab)
 {
-	static int tab = 0;
-	
+	printTabs(tab); printf("<g transform=\"translate(%.2f, %.2f) scale(%.2f)\">\n", t.dx, t.dy, t.ds);
+	printExpression(e, tab + 1);
+	printTabs(tab); printf("</g>");
+}
+
+void printExpression(YYSTYPE q, int tab)
+{
 	if (q->c != '\0')
 	{
+		assert(q->left == NULL && q->right == NULL);
+
 		printTabs(tab);
-		printf("Text: %c\n", q->c);
+		printf("<text>%c</text>\n", q->c);
 	}
 	else
 	{
-		printTabs(tab);
-		printf("Transform: dx = %lf, dy = %lf, ds = %lf\n", q->tl.dx, q->tl.dy, q->tl.ds);
+		assert(q->left != NULL && q->right != NULL);
 
-		tab++;
-		printExpression(q->left);
-		tab--;
-
-		printTabs(tab);
-		printf("Transform: dx = %lf, dy = %lf, ds = %lf\n", q->tr.dx, q->tr.dy, q->tr.ds);
-		
-		tab++;
-		printExpression(q->right);
-		tab--;
+		printBlock(q->tl, q->left, tab);
+		printBlock(q->tr, q->right, tab);
 	}
+}
+
+void printSVG(YYSTYPE q)
+{
+	puts("<?xml version=\"1.0\" standalone=\"no\"?>");
+	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
+	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
+	puts("<g transform=\"translate(0, 200) scale(10)\" font-family=\"Courier\">");
+
+	printExpression(q, 0);
+
+	puts("</g>");
+	puts("</svg>");
 }
 
 void yyerror(const char* s)
