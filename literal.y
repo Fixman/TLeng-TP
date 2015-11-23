@@ -61,11 +61,6 @@ id: T_ID
 
 %%
 
-void print(char s)
-{
-	printf("Caracter \"%c\" (%d)\n", s, (int) s);
-}
-
 void yyerror(const char* s)
 {
 	fprintf(stderr, "Parse error: %s\n", s);
@@ -79,6 +74,4 @@ int main()
 	size = 1;
 
 	yyparse();
-
-	printf("asdf\n");
 }
