@@ -46,11 +46,19 @@ init: e T_ENDLINE
 ;
 
 e:    f
-	| f T_SUM e
-;
 
-f: id
-;
+f:	  g f
+	| g
+
+g:    h T_CARET h
+	| h T_UNDER h
+	| h T_CARET h T_UNDER h
+	| h T_UNDER h T_CARET h
+	| h
+
+h:    T_OPENPAREN f T_CLOSEPAREN
+	| T_OPENBRACKET f T_CLOSEBRACKET
+	| id
 
 id: T_ID
 {
