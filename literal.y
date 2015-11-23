@@ -3,7 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define YYSTYPE char *
+struct Expression
+{
+	char c;
+	int x, y;
+	int size;
+};
 
 extern int yylex();
 extern int yyparse();
@@ -13,7 +18,10 @@ extern char* yytext;
 void yyerror(const char *s);
 void print(char s);
 
-int x;
+struct Expression tokens[1000];
+
+int x, y, size;
+int id;
 %}
 
 %token T_SUM
@@ -27,17 +35,28 @@ int x;
 
 %%
 
-init: e T_ENDLINE { printf("%s\n", $1); exit(0); }
+init: e T_ENDLINE
+{
+	int i;
+	for (i = 0; i < id; i++)
+		printf("\"%c\", x = %d, y = %d, size = %d\n", tokens[i].c, tokens[i].x, tokens[i].y, tokens[i].size);
+
+	exit(0);
+}
 ;
 
-e:    f { printf("Entro a e[0] con \"%s\" {1: \"%s\"}\n", $$, $1); }
-	| f T_SUM e { printf("Entro a e[1] con \"%s\" {1: \"%s\", 2: \"%s\", 3: \"%s\"}\n", $$, $1, $2, $3); sprintf($$, "%s+%s", $1, $3); }
+e:    f
+	| f T_SUM e
 ;
 
 f: id
 ;
 
-id: T_ID { $$ = strdup(yytext); }
+id: T_ID
+{
+	tokens[id++] = (struct Expression) {.c = yytext[0], .x = x, .y = y, .size = size};
+	x += size;
+}
 ;
 
 %%
@@ -56,5 +75,10 @@ void yyerror(const char* s)
 int main()
 {
 	x = 0;
+	y = 0;
+	size = 1;
+
 	yyparse();
+
+	printf("asdf\n");
 }
