@@ -31,12 +31,12 @@ typedef struct Transform Operation[2];
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
 Operation divide = {(struct Transform) {.dx = 0, .dy = -5, .ds = .8}, (struct Transform) {.dx = 0, .dy = 5, .ds = .8}};
 Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
-Operation caret = {idTransform, (struct Transform) {.dx = 6, .dy = -10, .ds = .6}};
-Operation under = {idTransform, (struct Transform) {.dx = 6, .dy = 10, .ds = .6}};
+Operation caret = {idTransform, (struct Transform) {.dx = 12, .dy = -20, .ds = .5}};
+Operation under = {idTransform, (struct Transform) {.dx = 12, .dy = 20, .ds = .5}};
 
 YYSTYPE buildToken(char c);
 YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b);
-void printExpression(YYSTYPE q, int tab);
+void printExpression(YYSTYPE q, double *x, double *y, double *s, int tab);
 void printSVG(YYSTYPE e);
 
 void yyerror(const char *s);
@@ -102,11 +102,17 @@ void printTabs(int tab)
 		printf("\t");
 }
 
-void printBlock(struct Transform t, struct Expression *e, int tab)
+void printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, int tab)
 {
-	printTabs(tab); printf("<g transform=\"translate(%.2f, %.2f) scale(%.2f)\">\n", t.dx, t.dy, t.ds);
-	printExpression(e, tab + 1);
-	printTabs(tab); printf("</g>");
+	*s *= t.ds;
+	*x += t.dx * *s;
+	*y += t.dy * *s;
+
+	printExpression(e, x, y, s, tab + 1);
+
+	*y -= t.dy * *s;
+	// *x -= t.dx * *s / 4;
+	*s /= t.ds;
 }
 
 void printExpression(YYSTYPE q, double *x, double *y, double *s, int tab)
@@ -116,15 +122,15 @@ void printExpression(YYSTYPE q, double *x, double *y, double *s, int tab)
 		assert(q->left == NULL && q->right == NULL);
 
 		printTabs(tab);
-		printf("<text x="%.2f" y=".%2f" transform=\"scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
-		*x += *s;
+		printf("<text transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
+		// *x += *s;
 	}
 	else
 	{
 		assert(q->left != NULL && q->right != NULL);
 
-		printBlock(q->tl, q->left, tab);
-		printBlock(q->tr, q->right, tab);
+		printBlock(q->tl, q->left, x, y, s, tab);
+		printBlock(q->tr, q->right, x, y, s, tab);
 	}
 }
 
