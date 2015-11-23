@@ -27,14 +27,17 @@ int x;
 
 %%
 
-init: e T_ENDLINE { exit(0); }
+init: e T_ENDLINE { printf("%s\n", $1); exit(0); }
 ;
 
-e:	id e { printf("(%s)", $1); }
-	|
+e:    f { printf("Entro a e[0] con \"%s\" {1: \"%s\"}\n", $$, $1); }
+	| f T_SUM e { printf("Entro a e[1] con \"%s\" {1: \"%s\", 2: \"%s\", 3: \"%s\"}\n", $$, $1, $2, $3); sprintf($$, "%s+%s", $1, $3); }
 ;
 
-id: T_ID	{ $$ = strdup(yytext); }
+f: id
+;
+
+id: T_ID { $$ = strdup(yytext); }
 ;
 
 %%
