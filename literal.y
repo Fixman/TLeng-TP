@@ -33,7 +33,7 @@ typedef struct Transform Operation[2];
 //const struct Transform idTransform = {.dx = 0, .dy = 0, .ds = 1};
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
 
-Operation divide = {(struct Transform) {.dx = 20, .dy = -6, .ds = .75}, (struct Transform) {.dx = 10, .dy = 6, .ds = .75}};
+Operation divide = {(struct Transform) {.dx = 10, .dy = -6, .ds = .75}, (struct Transform) {.dx = 10, .dy = 6, .ds = .75}};
 Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
 Operation caretunder = {(struct Transform) {.dx = 7, .dy = -5, .ds = .5}, (struct Transform) {.dx = 7, .dy = 5, .ds = .5}};
 
