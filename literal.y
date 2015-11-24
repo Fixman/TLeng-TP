@@ -35,7 +35,7 @@ typedef struct Transform Operation[2];
 
 Operation divide = {(struct Transform) {.dx = 10, .dy = -6, .ds = .75}, (struct Transform) {.dx = 10, .dy = 6, .ds = .75}};
 Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
-Operation caretunder = {(struct Transform) {.dx = 6, .dy = -10, .ds = .5}, (struct Transform) {.dx = 8, .dy = 5, .ds = .5}};
+Operation caretunder = {(struct Transform) {.dx = 7, .dy = -5, .ds = .5}, (struct Transform) {.dx = 7, .dy = 5, .ds = .5}};
 
 YYSTYPE buildToken(char c);
 YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b, YYSTYPE c);
