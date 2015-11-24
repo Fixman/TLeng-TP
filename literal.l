@@ -10,6 +10,8 @@
 
 %%
 
+[ \t] ;
+
 "\n" { return T_ENDLINE; }
 
 "(" { return T_OPENPAREN; }

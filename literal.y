@@ -170,10 +170,11 @@ bool printExpression(YYSTYPE q, double *x, double *y, double *s, bool print)
 				x2 = x0;
 			}
 
-			printBlock(q->t0, q->center, &x1, y, s, ax, true);
-			printBlock(q->t1, q->right, &x2, y, s, ax, true);
+			printBlock(q->t0, q->center, &x1, y, s, ax, print);
+			printBlock(q->t1, q->right, &x2, y, s, ax, print);
 
-			printf("<line x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" style=\"stroke:rgb(0,0,0);stroke-width:.25\"/>\n", x0, *x, h, h);
+			if (print)
+				printf("<line x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" style=\"stroke:rgb(0,0,0);stroke-width:.25\"/>\n", x0, *x, h, h);
 		}
 
 		return false;
