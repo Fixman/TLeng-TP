@@ -34,8 +34,8 @@ typedef struct Transform Operation[2];
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
 
 Operation divide = {(struct Transform) {.dx = 10, .dy = -6, .ds = .75}, (struct Transform) {.dx = 10, .dy = 6, .ds = .75}};
-Operation concat = {idTransform, (struct Transform) {.dx = 9, .dy = 0, .ds = 1}};
-Operation caretunder = {(struct Transform) {.dx = 6, .dy = -10, .ds = .5}, (struct Transform) {.dx = 7, .dy = 5, .ds = .5}};
+Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
+Operation caretunder = {(struct Transform) {.dx = 6, .dy = -10, .ds = .5}, (struct Transform) {.dx = 8, .dy = 5, .ds = .5}};
 
 YYSTYPE buildToken(char c);
 YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b, YYSTYPE c);
@@ -168,7 +168,7 @@ void printSVG(YYSTYPE q)
 	puts("<?xml version=\"1.0\" standalone=\"no\"?>");
 	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
-	puts("<g transform=\"translate(0, 200) scale(8)\" font-family=\"Courier\">");
+	puts("<g transform=\"translate(0, 200) scale(8)\" font-family=\"monospace\">");
 
 	double x = 0, y = 0, s = 1;
 	printExpression(q, &x, &y, &s);
