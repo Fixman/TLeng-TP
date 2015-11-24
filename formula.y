@@ -104,11 +104,6 @@ YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b, YYSTYPE c)
 	return r;
 }
 
-struct Transform invert(struct Transform n)
-{
-	return (struct Transform) {.dx = n.dx, .dy = -1 * (1 / n.ds) * n.dy, .ds = 1 / n.ds};
-}
-
 bool printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, bool ax, bool print)
 {
 	if (e == NULL)

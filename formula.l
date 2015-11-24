@@ -1,11 +1,6 @@
 %{
-
 #include <stdio.h>
-
-#define YY_DECL int yylex()
-
 #include "formula.tab.h"
-
 %}
 
 %%
@@ -22,7 +17,7 @@
 "^" { return T_CARET; }
 "_" { return T_UNDER; }
 
-[^^_/{}()] { return T_ID; }
+[^^_/{}() \t] { return T_ID; }
 
 %%
 
