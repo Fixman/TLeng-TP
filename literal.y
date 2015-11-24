@@ -73,7 +73,7 @@ g:	  h T_CARET h { $$ = buildExpression(caretunder, $1, $3, NULL); }
 	| h T_UNDER h T_CARET h { $$ = buildExpression(caretunder, $1, $5, $3); }
 	| h
 
-h:	  T_OPENPAREN e T_CLOSEPAREN
+h:	  T_OPENPAREN e T_CLOSEPAREN { $$ = buildExpression(concat, buildToken('('), NULL, buildExpression(concat, $2, NULL, buildToken(')'))); }
 	| T_OPENBRACKET e T_CLOSEBRACKET { $$ = $2; }
 	| T_ID { $$ = buildToken(yytext[0]); }
 
@@ -134,7 +134,7 @@ bool printExpression(YYSTYPE q, double *x, double *y, double *s)
 	if (q->c != '\0')
 	{
 		assert(q->left == NULL && q->center == NULL && q->right == NULL);
-		printf("<text transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
+		printf("<text dominant-baseline=\"mathematical\" transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
 
 		return true;
 	}
@@ -154,7 +154,10 @@ bool printExpression(YYSTYPE q, double *x, double *y, double *s)
 		*x = fmax(x1, x2);
 
 		if (q->division)
-			printf("<line x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" style=\"stroke:rgb(0,0,0);stroke-width:.25\"/>\n", x0, *x, *y, *y);
+		{
+			double h = *y;
+			printf("<line x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" style=\"stroke:rgb(0,0,0);stroke-width:.25\"/>\n", x0, *x, h, h);
+		}
 
 		return false;
 	}
@@ -165,7 +168,7 @@ void printSVG(YYSTYPE q)
 	puts("<?xml version=\"1.0\" standalone=\"no\"?>");
 	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
-	puts("<g transform=\"translate(0, 200) scale(12)\" font-family=\"Courier\">");
+	puts("<g transform=\"translate(0, 200) scale(8)\" font-family=\"Courier\">");
 
 	double x = 0, y = 0, s = 1;
 	printExpression(q, &x, &y, &s);
