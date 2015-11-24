@@ -10,4 +10,4 @@ literal: lex.yy.c literal.tab.c literal.tab.h
 	gcc -std=gnu11 -o literal lex.yy.c literal.tab.c -lfl
 
 clean:
-	rm -f literal.tab.h literal.tab.c lex.yy.c literal
+	rm -f literal.output literal.tab.h literal.tab.c lex.yy.c literal

@@ -31,12 +31,12 @@ typedef struct Transform Operation[2];
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
 Operation divide = {(struct Transform) {.dx = 0, .dy = -5, .ds = .8}, (struct Transform) {.dx = 0, .dy = 5, .ds = .8}};
 Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
-Operation caret = {idTransform, (struct Transform) {.dx = 12, .dy = -20, .ds = .5}};
-Operation under = {idTransform, (struct Transform) {.dx = 16, .dy = 8, .ds = .5}};
+Operation caret = {idTransform, (struct Transform) {.dx = 6, .dy = -10, .ds = .5}};
+Operation under = {idTransform, (struct Transform) {.dx = 6, .dy = 8, .ds = .5}};
 
 YYSTYPE buildToken(char c);
 YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b);
-void printExpression(YYSTYPE q, double *x, double *y, double *s, int tab);
+void printExpression(YYSTYPE q, double *x, double *y, double *s, double dx, int tab);
 void printSVG(YYSTYPE e);
 
 void yyerror(const char *s);
@@ -104,18 +104,19 @@ void printTabs(int tab)
 
 void printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, int tab)
 {
-	*s *= t.ds;
-	*x += t.dx * *s;
+	static double ls = 1;
+
 	*y += t.dy * *s;
+	*x += t.dx * *s;
+	*s *= t.ds;
 
-	printExpression(e, x, y, s, tab + 1);
+	printExpression(e, x, y, s, t.dx, tab + 1);
 
-	*y -= t.dy * *s;
-	// *x -= t.dx * *s / 4;
 	*s /= t.ds;
+	*y -= t.dy * *s;
 }
 
-void printExpression(YYSTYPE q, double *x, double *y, double *s, int tab)
+void printExpression(YYSTYPE q, double *x, double *y, double *s, double dx, int tab)
 {
 	if (q->c != '\0')
 	{
@@ -123,7 +124,7 @@ void printExpression(YYSTYPE q, double *x, double *y, double *s, int tab)
 
 		printTabs(tab);
 		printf("<text transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
-		// *x += *s;
+		//*x += *s * 8;
 	}
 	else
 	{
@@ -142,7 +143,7 @@ void printSVG(YYSTYPE q)
 	puts("<g transform=\"translate(0, 200) scale(10)\" font-family=\"Courier\">");
 
 	double x = 0, y = 0, s = 1;
-	printExpression(q, &x, &y, &s, 0);
+	printExpression(q, &x, &y, &s, 0, 0);
 
 	puts("</g>");
 	puts("</svg>");
