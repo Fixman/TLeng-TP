@@ -14,10 +14,9 @@ struct Transform
 struct Expression
 {
 	char c;
-	struct Expression *left, *right;
-	struct Transform t;
+	struct Expression *left, *center, *right;
+	struct Transform tl, tr;
 };
-
 
 extern int yylex();
 extern int yyparse();
@@ -27,16 +26,18 @@ extern char* yytext;
 #define YYSTYPE_IS_DECLARED
 typedef struct Expression *YYSTYPE;
 
+typedef struct Transform Operation[2];
+
 //const struct Transform idTransform = {.dx = 0, .dy = 0, .ds = 1};
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
-struct Transform divide = (struct Transform) {.dx = 0, .dy = -5, .ds = .8};
+Operation divide = {(struct Transform) {.dx = 0, .dy = -5, .ds = .8}, idTransform};
 
-struct Transform concat = (struct Transform) {.dx = 9, .dy = 0, .ds = 1};
-struct Transform caret = (struct Transform) {.dx = 6, .dy = -10, .ds = 1./2};
-struct Transform under = (struct Transform) {.dx = 6, .dy = 5, .ds = 1./2};
+Operation concat = {(struct Transform) {.dx = 9, .dy = 0, .ds = 1}, idTransform};
+Operation caret = {(struct Transform) {.dx = 6, .dy = -10, .ds = .5}, idTransform};
+Operation under = {(struct Transform) {.dx = 6, .dy = 5, .ds = .5}, idTransform};
 
 YYSTYPE buildToken(char c);
-YYSTYPE buildExpression(struct Transform op, YYSTYPE a, YYSTYPE b);
+YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b);
 bool printExpression(YYSTYPE q, double *x, double *y, double *s);
 void printSVG(YYSTYPE e);
 
@@ -84,14 +85,15 @@ YYSTYPE buildToken(char c)
 	return r;
 }
 
-YYSTYPE buildExpression(struct Transform op, YYSTYPE a, YYSTYPE b)
+YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b)
 {
 	YYSTYPE r = malloc(sizeof (struct Expression));
 	r->c = '\0';
 	r->left = a;
 	r->right = b;
 
-	r->t = op;
+	r->tl = op[0];
+	r->tr = op[1];
 
 	return r;
 }
@@ -101,13 +103,21 @@ struct Transform invert(struct Transform n)
 	return (struct Transform) {.dx = n.dx, .dy = -1 * (1 / n.ds) * n.dy, .ds = 1 / n.ds};
 }
 
-void printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s)
+bool printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, bool adv)
 {
-	if (printExpression(e, x, y, s))
+	if (adv)
 		*x += *s * t.dx;
 	
 	*y += *s * t.dy;
 	*s *= t.ds;
+
+	if (adv = printExpression(e, x, y, s))
+		*x += *s * t.dx;
+	
+	*s /= t.ds;
+	*y -= *s * t.dy;
+
+	return adv;
 }
 
 bool printExpression(YYSTYPE q, double *x, double *y, double *s)
@@ -123,8 +133,8 @@ bool printExpression(YYSTYPE q, double *x, double *y, double *s)
 	{
 		assert(q->left != NULL && q->right != NULL);
 
-		printBlock(q->t, q->left, x, y, s);
-		printBlock(invert(q->t), q->right, x, y, s);
+		bool adv = printBlock(q->tr, q->left, x, y, s, false);
+		printBlock(q->tl, q->right, x, y, s, adv);
 
 		return false;
 	}
