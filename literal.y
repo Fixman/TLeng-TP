@@ -33,8 +33,7 @@ typedef struct Transform Operation[2];
 Operation divide = {idTransform, (struct Transform) {.dx = 0, .dy = -5, .ds = .8}};
 
 Operation concat = {idTransform, (struct Transform) {.dx = 9, .dy = 0, .ds = 1}};
-Operation caret = {idTransform, (struct Transform) {.dx = 6, .dy = -10, .ds = .5}};
-Operation under = {idTransform, (struct Transform) {.dx = 6, .dy = 5, .ds = .5}};
+Operation caretunder = {(struct Transform) {.dx = 6, .dy = -10, .ds = .5}, (struct Transform) {.dx = 7, .dy = 5, .ds = .5}};
 
 YYSTYPE buildToken(char c);
 YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b, YYSTYPE c);
@@ -66,8 +65,10 @@ e:	  f T_DIV e { $$ = buildExpression(divide, $1, NULL, $3); }
 f:	  g f { $$ = buildExpression(concat, $1, NULL, $2); }
 	| g
 
-g:	  h T_CARET h { $$ = buildExpression(caret, $1, NULL, $3); }
-	| h T_UNDER h { $$ = buimaxldExpression(under, $1, NULL, $3); }
+g:	  h T_CARET h { $$ = buildExpression(caretunder, $1, $3, NULL); }
+	| h T_UNDER h { $$ = buildExpression(caretunder, $1, NULL, $3); }
+	| h T_CARET h T_UNDER h { $$ = buildExpression(caretunder, $1, $3, $5); }
+	| h T_UNDER h T_CARET h { $$ = buildExpression(caretunder, $1, $5, $3); }
 	| h
 
 h:	  T_OPENPAREN e T_CLOSEPAREN
@@ -128,14 +129,14 @@ bool printExpression(YYSTYPE q, double *x, double *y, double *s)
 {
 	if (q->c != '\0')
 	{
-		assert(q->left == NULL && q->right == NULL);
+		assert(q->left == NULL && q->center == NULL && q->right == NULL);
 		printf("<text transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
 
 		return true;
 	}
 	else
 	{
-		assert(q->left != NULL && q->right != NULL);
+		assert(q->left != NULL && (q->center != NULL || q->right != NULL));
 
 		bool ax = printBlock(idTransform, q->left, x, y, s, false);
 
