@@ -4,7 +4,7 @@
 
 #define YY_DECL int yylex()
 
-#include "literal.tab.h"
+#include "formula.tab.h"
 
 %}
 

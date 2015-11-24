@@ -1,13 +1,13 @@
-all: literal
+all: formula
 
-literal.tab.c literal.tab.h: literal.y
-	bison --verbose -d literal.y
+formula.tab.c formula.tab.h: formula.y
+	bison --verbose -d formula.y
 
-lex.yy.c: literal.tab.h literal.l
-	flex literal.l
+lex.yy.c: formula.tab.h formula.l
+	flex formula.l
 
-literal: lex.yy.c literal.tab.c literal.tab.h
-	gcc -std=gnu11 -o literal lex.yy.c literal.tab.c -lfl -lm
+formula: lex.yy.c formula.tab.c formula.tab.h
+	gcc -std=gnu11 -o formula lex.yy.c formula.tab.c -lfl -lm
 
 clean:
-	rm -f literal.output literal.tab.h literal.tab.c lex.yy.c literal
+	rm -f formula.output formula.tab.h formula.tab.c lex.yy.c formula
