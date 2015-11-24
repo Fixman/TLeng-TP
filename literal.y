@@ -15,7 +15,7 @@ struct Expression
 {
 	char c;
 	struct Expression *left, *right;
-	struct Transform tl, tr;
+	struct Transform t;
 };
 
 
@@ -26,19 +26,18 @@ extern char* yytext;
 
 #define YYSTYPE_IS_DECLARED
 typedef struct Expression *YYSTYPE;
-typedef struct Transform Operation[2];
 
 //const struct Transform idTransform = {.dx = 0, .dy = 0, .ds = 1};
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
-Operation divide = {(struct Transform) {.dx = 0, .dy = -5, .ds = .8}, (struct Transform) {.dx = 0, .dy = 5, .ds = .8}};
+struct Transform divide = (struct Transform) {.dx = 0, .dy = -5, .ds = .8};
 
-Operation concat = {(struct Transform) {.dx = 9, .dy = 0, .ds = 1}, (struct Transform) {.dx = 9, .dy = 0, .ds = 1}};
-Operation caret = {(struct Transform) {.dx = 6, .dy = -10, .ds = 1./2}, (struct Transform) {.dx = 6, .dy = 20, .ds = 2}};
-Operation under = {(struct Transform) {.dx = 8, .dy = 3, .ds = 1./2}, (struct Transform) {.dx = 6, .dy = -6, .ds = 2}};
+struct Transform concat = (struct Transform) {.dx = 9, .dy = 0, .ds = 1};
+struct Transform caret = (struct Transform) {.dx = 6, .dy = -10, .ds = 1./2};
+struct Transform under = (struct Transform) {.dx = 6, .dy = 5, .ds = 1./2};
 
 YYSTYPE buildToken(char c);
-YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b);
-bool printExpression(YYSTYPE q, double *x, double *y, double *s, double dx, int tab);
+YYSTYPE buildExpression(struct Transform op, YYSTYPE a, YYSTYPE b);
+bool printExpression(YYSTYPE q, double *x, double *y, double *s);
 void printSVG(YYSTYPE e);
 
 void yyerror(const char *s);
@@ -85,41 +84,37 @@ YYSTYPE buildToken(char c)
 	return r;
 }
 
-YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b)
+YYSTYPE buildExpression(struct Transform op, YYSTYPE a, YYSTYPE b)
 {
 	YYSTYPE r = malloc(sizeof (struct Expression));
 	r->c = '\0';
 	r->left = a;
 	r->right = b;
 
-	r->tl = op[0];
-	r->tr = op[1];
+	r->t = op;
 
 	return r;
 }
 
-void printTabs(int tab)
+struct Transform invert(struct Transform n)
 {
-	while (tab--)
-		printf("\t");
+	return (struct Transform) {.dx = n.dx, .dy = -1 * (1 / n.ds) * n.dy, .ds = 1 / n.ds};
 }
 
-void printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, int tab)
+void printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s)
 {
-	if (printExpression(e, x, y, s, t.dx, tab + 1))
+	if (printExpression(e, x, y, s))
 		*x += *s * t.dx;
 	
 	*y += *s * t.dy;
 	*s *= t.ds;
 }
 
-bool printExpression(YYSTYPE q, double *x, double *y, double *s, double dx, int tab)
+bool printExpression(YYSTYPE q, double *x, double *y, double *s)
 {
 	if (q->c != '\0')
 	{
 		assert(q->left == NULL && q->right == NULL);
-
-		printTabs(tab);
 		printf("<text transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
 
 		return true;
@@ -128,8 +123,8 @@ bool printExpression(YYSTYPE q, double *x, double *y, double *s, double dx, int 
 	{
 		assert(q->left != NULL && q->right != NULL);
 
-		printBlock(q->tl, q->left, x, y, s, tab);
-		printBlock(q->tr, q->right, x, y, s, tab);
+		printBlock(q->t, q->left, x, y, s);
+		printBlock(invert(q->t), q->right, x, y, s);
 
 		return false;
 	}
@@ -143,7 +138,7 @@ void printSVG(YYSTYPE q)
 	puts("<g transform=\"translate(0, 200) scale(10)\" font-family=\"Courier\">");
 
 	double x = 0, y = 0, s = 1;
-	printExpression(q, &x, &y, &s, 0, 0);
+	printExpression(q, &x, &y, &s);
 
 	puts("</g>");
 	puts("</svg>");
