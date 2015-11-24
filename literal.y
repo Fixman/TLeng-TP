@@ -17,6 +17,8 @@ struct Expression
 	char c;
 	struct Expression *left, *center, *right;
 	struct Transform t0, t1;
+
+	bool division;
 };
 
 extern int yylex();
@@ -30,8 +32,8 @@ typedef struct Transform Operation[2];
 
 //const struct Transform idTransform = {.dx = 0, .dy = 0, .ds = 1};
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
-Operation divide = {idTransform, (struct Transform) {.dx = 0, .dy = -5, .ds = .8}};
 
+Operation divide = {(struct Transform) {.dx = 10, .dy = -6, .ds = .75}, (struct Transform) {.dx = 10, .dy = 6, .ds = .75}};
 Operation concat = {idTransform, (struct Transform) {.dx = 9, .dy = 0, .ds = 1}};
 Operation caretunder = {(struct Transform) {.dx = 6, .dy = -10, .ds = .5}, (struct Transform) {.dx = 7, .dy = 5, .ds = .5}};
 
@@ -59,7 +61,7 @@ init: e T_ENDLINE
 	exit(0);
 }
 
-e:	  f T_DIV e { $$ = buildExpression(divide, $1, NULL, $3); }
+e:	  f T_DIV e { $$ = buildExpression(divide, NULL, $1, $3); }
 	| f
 
 f:	  g f { $$ = buildExpression(concat, $1, NULL, $2); }
@@ -97,6 +99,8 @@ YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b, YYSTYPE c)
 	r->t0 = op[0];
 	r->t1 = op[1];
 
+	r->division = op == divide;
+
 	return r;
 }
 
@@ -108,7 +112,7 @@ struct Transform invert(struct Transform n)
 bool printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, bool ax)
 {
 	if (e == NULL)
-		return false;
+		return ax;
 
 	if (ax)
 		*x += *s * t.dx;
@@ -136,17 +140,21 @@ bool printExpression(YYSTYPE q, double *x, double *y, double *s)
 	}
 	else
 	{
-		assert(q->left != NULL && (q->center != NULL || q->right != NULL));
-
-		bool ax = printBlock(idTransform, q->left, x, y, s, false);
+		assert((q->left != NULL) + (q->center != NULL) + (q->right != NULL) >= 2);
 
 		double x0 = *x;
-		printBlock(q->t0, q->center, &x0, y, s, ax);
+		bool ax = printBlock(idTransform, q->left, x, y, s, false);
 
 		double x1 = *x;
-		printBlock(q->t1, q->right, &x1, y, s, ax);
+		printBlock(q->t0, q->center, &x1, y, s, ax);
 
-		*x = fmax(x0, x1);
+		double x2 = *x;
+		printBlock(q->t1, q->right, &x2, y, s, ax);
+
+		*x = fmax(x1, x2);
+
+		if (q->division)
+			printf("<line x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" style=\"stroke:rgb(0,0,0);stroke-width:.25\"/>\n", x0, *x, *y, *y);
 
 		return false;
 	}
@@ -157,7 +165,7 @@ void printSVG(YYSTYPE q)
 	puts("<?xml version=\"1.0\" standalone=\"no\"?>");
 	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
-	puts("<g transform=\"translate(0, 200) scale(10)\" font-family=\"Courier\">");
+	puts("<g transform=\"translate(0, 200) scale(12)\" font-family=\"Courier\">");
 
 	double x = 0, y = 0, s = 1;
 	printExpression(q, &x, &y, &s);
