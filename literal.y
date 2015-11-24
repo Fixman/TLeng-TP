@@ -33,13 +33,13 @@ typedef struct Transform Operation[2];
 //const struct Transform idTransform = {.dx = 0, .dy = 0, .ds = 1};
 #define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
 
-Operation divide = {(struct Transform) {.dx = 10, .dy = -6, .ds = .75}, (struct Transform) {.dx = 10, .dy = 6, .ds = .75}};
+Operation divide = {(struct Transform) {.dx = 20, .dy = -6, .ds = .75}, (struct Transform) {.dx = 10, .dy = 6, .ds = .75}};
 Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
 Operation caretunder = {(struct Transform) {.dx = 7, .dy = -5, .ds = .5}, (struct Transform) {.dx = 7, .dy = 5, .ds = .5}};
 
 YYSTYPE buildToken(char c);
 YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b, YYSTYPE c);
-bool printExpression(YYSTYPE q, double *x, double *y, double *s);
+bool printExpression(YYSTYPE q, double *x, double *y, double *s, bool print);
 void printSVG(YYSTYPE e);
 
 void yyerror(const char *s);
@@ -109,7 +109,7 @@ struct Transform invert(struct Transform n)
 	return (struct Transform) {.dx = n.dx, .dy = -1 * (1 / n.ds) * n.dy, .ds = 1 / n.ds};
 }
 
-bool printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, bool ax)
+bool printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, bool ax, bool print)
 {
 	if (e == NULL)
 		return ax;
@@ -120,7 +120,7 @@ bool printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, 
 	*y += *s * t.dy;
 	*s *= t.ds;
 
-	if (ax = printExpression(e, x, y, s))
+	if (ax = printExpression(e, x, y, s, print))
 		*x += *s * t.dx;
 	
 	*s /= t.ds;
@@ -129,33 +129,50 @@ bool printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, 
 	return ax;
 }
 
-bool printExpression(YYSTYPE q, double *x, double *y, double *s)
+bool printExpression(YYSTYPE q, double *x, double *y, double *s, bool print)
 {
 	if (q->c != '\0')
 	{
 		assert(q->left == NULL && q->center == NULL && q->right == NULL);
-		printf("<text dominant-baseline=\"mathematical\" transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
+
+		if (print)
+			printf("<text dominant-baseline=\"mathematical\" transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
 
 		return true;
 	}
 	else
 	{
-		assert((q->left != NULL) + (q->center != NULL) + (q->right != NULL) >= 2);
+		assert(q->left != NULL || q->center != NULL || q->right != NULL);
 
 		double x0 = *x;
-		bool ax = printBlock(idTransform, q->left, x, y, s, false);
+		bool ax = printBlock(idTransform, q->left, x, y, s, false, print && !q->division);
 
 		double x1 = *x;
-		printBlock(q->t0, q->center, &x1, y, s, ax);
+		printBlock(q->t0, q->center, &x1, y, s, ax, print && !q->division);
 
 		double x2 = *x;
-		printBlock(q->t1, q->right, &x2, y, s, ax);
+		printBlock(q->t1, q->right, &x2, y, s, ax, print && !q->division);
 
 		*x = fmax(x1, x2);
 
 		if (q->division)
 		{
 			double h = *y;
+
+			if (x1 > x2)
+			{
+				x2 = (x1 + x0) / 2 - (x2 - x0) / 2;
+				x1 = x0;
+			}
+			else
+			{
+				x1 = (x2 + x0) / 2 - (x1 - x0) / 2;
+				x2 = x0;
+			}
+
+			printBlock(q->t0, q->center, &x1, y, s, ax, true);
+			printBlock(q->t1, q->right, &x2, y, s, ax, true);
+
 			printf("<line x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" style=\"stroke:rgb(0,0,0);stroke-width:.25\"/>\n", x0, *x, h, h);
 		}
 
@@ -168,10 +185,10 @@ void printSVG(YYSTYPE q)
 	puts("<?xml version=\"1.0\" standalone=\"no\"?>");
 	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
-	puts("<g transform=\"translate(0, 200) scale(8)\" font-family=\"monospace\">");
+	puts("<g transform=\"translate(50, 200) scale(8)\" font-family=\"monospace\">");
 
 	double x = 0, y = 0, s = 1;
-	printExpression(q, &x, &y, &s);
+	printExpression(q, &x, &y, &s, true);
 
 	puts("</g>");
 	puts("</svg>");
