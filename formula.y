@@ -37,13 +37,13 @@ extern char* yytext;
 #define YYSTYPE_IS_DECLARED
 typedef struct Expression *YYSTYPE;
 
-YYSTYPE buildToken(char c);
-YYSTYPE buildExpression(enum Operation op, YYSTYPE left, YYSTYPE right);
-void printSVG(YYSTYPE e);
+YYSTYPE buildToken(char);
+YYSTYPE buildExpression(enum Operation, YYSTYPE, YYSTYPE);
+void printSVG(YYSTYPE);
 
-void sizeExpression(YYSTYPE e);
+void sizeExpression(YYSTYPE);
 
-void yyerror(const char *s);
+void yyerror(const char *);
 %}
 
 %token T_DIV
