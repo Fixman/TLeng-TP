@@ -8,11 +8,11 @@
 
 enum Operation
 {
+	Literal,
 	Concat,
 	Caretunder,
 	Parentheses,
-	Division,
-	Literal
+	Division
 };
 
 struct Size
@@ -31,7 +31,6 @@ struct Expression
 
 extern int yylex();
 extern int yyparse();
-extern FILE* yyin;
 extern char* yytext;
 
 #define YYSTYPE_IS_DECLARED
@@ -39,9 +38,9 @@ typedef struct Expression *YYSTYPE;
 
 YYSTYPE buildToken(char);
 YYSTYPE buildExpression(enum Operation, YYSTYPE, YYSTYPE);
-void printSVG(YYSTYPE);
-
 void sizeExpression(YYSTYPE);
+void printExpression(YYSTYPE);
+void printSVG(YYSTYPE);
 
 void yyerror(const char *);
 %}
@@ -56,11 +55,7 @@ void yyerror(const char *);
 
 %%
 
-init: e T_ENDLINE
-{
-	printSVG($$);
-	exit(0);
-}
+init: e T_ENDLINE { printSVG($$); }
 
 e:	  f T_DIV e { $$ = buildExpression(Division, $1, $3); }
 	| f
@@ -105,6 +100,9 @@ struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 {
 	switch (t)
 	{
+		case Literal:
+			return (struct Size) {.x = 7, .y = 7};
+
 		case Concat:
 			return (struct Size) {.x = left->d.x + right->d.x, .y = left->d.y + right->d.y};
 
@@ -123,12 +121,9 @@ struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 			}
 			return r;
 		}
-
-		case Literal:
-			return (struct Size) {.x = 1, .y = 1};
 	}
 
-	fprintf(stderr, "Invalid operation: %d\n", t);
+	fprintf(stderr, "Invalid operation under calculate: %d\n", t);
 	abort();
 }
 
@@ -136,11 +131,45 @@ void sizeExpression(YYSTYPE q)
 {
 	if (q == NULL)
 		return;
-	
+
 	sizeExpression(q->left);
 	sizeExpression(q->right);
 
 	q->d = getSizes(q->t, q->left, q->right);
+}
+
+void transformExpression(YYSTYPE q, double dx, double dy, double ds)
+{
+	printf("<g transform=\"translate(%lf %lf) scale(%lf)\">\n", dx, dy, ds);
+	printExpression(q);
+	printf("</g>\n");
+}
+
+void printExpression(YYSTYPE q)
+{
+	if (q == NULL)
+		return;
+
+	switch (q->t)
+	{
+		case Literal:
+			printf("<text>%c</text>\n", q->c);
+			break;
+
+		case Concat:
+			printExpression(q->left);
+			transformExpression(q->right, q->left->d.x, 0, 1);
+			break;
+
+		case Caretunder:
+			transformExpression(q->left, 0, -6, .75);
+			transformExpression(q->right, 0, 5, .75);
+			break;
+
+		default:
+			fprintf(stderr, "Invalid operation under print: %d\n", q->t);
+			break;
+	}
 }
 
 void printSVG(YYSTYPE q)
@@ -153,8 +182,7 @@ void printSVG(YYSTYPE q)
 
 	puts("<g transform=\"translate(50, 200) scale(8)\" font-family=\"monospace\">");
 
-	// double x = 0, y = 0, s = 1;
-	// printExpression(q, &x, &y, &s, true);
+	printExpression(q);
 
 	puts("</g>");
 	puts("</svg>");
