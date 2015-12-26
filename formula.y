@@ -6,19 +6,27 @@
 #include <math.h>
 #include <assert.h>
 
-struct Transform
+enum Operation
 {
-	double dx, dy;
-	double ds;
+	Concat,
+	Caretunder,
+	Parentheses,
+	Division,
+	Literal
+};
+
+struct Size
+{
+	double x, y;
 };
 
 struct Expression
 {
+	struct Expression *left, *right;
 	char c;
-	struct Expression *left, *center, *right;
-	struct Transform t0, t1;
 
-	bool division;
+	enum Operation t;
+	struct Size d;
 };
 
 extern int yylex();
@@ -28,19 +36,12 @@ extern char* yytext;
 
 #define YYSTYPE_IS_DECLARED
 typedef struct Expression *YYSTYPE;
-typedef struct Transform Operation[2];
-
-//const struct Transform idTransform = {.dx = 0, .dy = 0, .ds = 1};
-#define idTransform ((struct Transform) {.dx = 0, .dy = 0, .ds = 1})
-
-Operation divide = {(struct Transform) {.dx = 10, .dy = -6, .ds = .75}, (struct Transform) {.dx = 10, .dy = 6, .ds = .75}};
-Operation concat = {idTransform, (struct Transform) {.dx = 8, .dy = 0, .ds = 1}};
-Operation caretunder = {(struct Transform) {.dx = 7, .dy = -5, .ds = .5}, (struct Transform) {.dx = 7, .dy = 5, .ds = .5}};
 
 YYSTYPE buildToken(char c);
-YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b, YYSTYPE c);
-bool printExpression(YYSTYPE q, double *x, double *y, double *s, bool print);
+YYSTYPE buildExpression(enum Operation op, YYSTYPE left, YYSTYPE right);
 void printSVG(YYSTYPE e);
+
+void sizeExpression(YYSTYPE e);
 
 void yyerror(const char *s);
 %}
@@ -61,19 +62,19 @@ init: e T_ENDLINE
 	exit(0);
 }
 
-e:	  f T_DIV e { $$ = buildExpression(divide, NULL, $1, $3); }
+e:	  f T_DIV e { $$ = buildExpression(Division, $1, $3); }
 	| f
 
-f:	  g f { $$ = buildExpression(concat, $1, NULL, $2); }
+f:	  g f { $$ = buildExpression(Concat, $1, $2); }
 	| g
 
-g:	  h T_CARET h { $$ = buildExpression(caretunder, $1, $3, NULL); }
-	| h T_UNDER h { $$ = buildExpression(caretunder, $1, NULL, $3); }
-	| h T_CARET h T_UNDER h { $$ = buildExpression(caretunder, $1, $3, $5); }
-	| h T_UNDER h T_CARET h { $$ = buildExpression(caretunder, $1, $5, $3); }
+g:	  h T_CARET h { $$ = buildExpression(Concat, $1, buildExpression(Caretunder, $3, NULL)); }
+	| h T_UNDER h { $$ = buildExpression(Concat, $1, buildExpression(Caretunder, NULL, $3)); }
+	| h T_CARET h T_UNDER h { $$ = buildExpression(Concat, $1, buildExpression(Caretunder, $3, $5)); }
+	| h T_UNDER h T_CARET h { $$ = buildExpression(Concat, $1, buildExpression(Caretunder, $5, $3)); }
 	| h
 
-h:	  T_OPENPAREN e T_CLOSEPAREN { $$ = buildExpression(concat, buildToken('('), NULL, buildExpression(concat, $2, NULL, buildToken(')'))); }
+h:	  T_OPENPAREN e T_CLOSEPAREN { $$ = buildExpression(Parentheses, $1, $3); }
 	| T_OPENBRACKET e T_CLOSEBRACKET { $$ = $2; }
 	| T_ID { $$ = buildToken(yytext[0]); }
 
@@ -83,108 +84,77 @@ YYSTYPE buildToken(char c)
 {
 	YYSTYPE r = malloc(sizeof (struct Expression));
 	r->c = c;
-	r->left = r->center = r->right = NULL;
+	r->t = Literal;
+	r->left = r->right = NULL;
 
 	return r;
 }
 
-YYSTYPE buildExpression(Operation op, YYSTYPE a, YYSTYPE b, YYSTYPE c)
+YYSTYPE buildExpression(enum Operation op, YYSTYPE left, YYSTYPE right)
 {
 	YYSTYPE r = malloc(sizeof (struct Expression));
 	r->c = '\0';
-	r->left = a;
-	r->center = b;
-	r->right = c;
-
-	r->t0 = op[0];
-	r->t1 = op[1];
-
-	r->division = op == divide;
+	r->t = op;
+	r->left = left;
+	r->right = right;
 
 	return r;
 }
 
-bool printBlock(struct Transform t, YYSTYPE e, double *x, double *y, double *s, bool ax, bool print)
+struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 {
-	if (e == NULL)
-		return ax;
-
-	if (ax)
-		*x += *s * t.dx;
-	
-	*y += *s * t.dy;
-	*s *= t.ds;
-
-	if (ax = printExpression(e, x, y, s, print))
-		*x += *s * t.dx;
-	
-	*s /= t.ds;
-	*y -= *s * t.dy;
-
-	return ax;
-}
-
-bool printExpression(YYSTYPE q, double *x, double *y, double *s, bool print)
-{
-	if (q->c != '\0')
+	switch (t)
 	{
-		assert(q->left == NULL && q->center == NULL && q->right == NULL);
+		case Concat:
+			return (struct Size) {.x = left->d.x + right->d.x, .y = left->d.y + right->d.y};
 
-		if (print)
-			printf("<text dominant-baseline=\"mathematical\" transform=\"translate(%.2f, %.2f) scale(%.2f)\">%c</text>\n", *x, *y, *s, q->c);
-
-		return true;
-	}
-	else
-	{
-		assert(q->left != NULL || q->center != NULL || q->right != NULL);
-
-		double x0 = *x;
-		bool ax = printBlock(idTransform, q->left, x, y, s, false, print && !q->division);
-
-		double x1 = *x;
-		printBlock(q->t0, q->center, &x1, y, s, ax, print && !q->division);
-
-		double x2 = *x;
-		printBlock(q->t1, q->right, &x2, y, s, ax, print && !q->division);
-
-		*x = fmax(x1, x2);
-
-		if (q->division)
+		case Caretunder:
 		{
-			double h = *y;
-
-			if (x1 > x2)
+			struct Size r = {0, 0};
+			if (left)
 			{
-				x2 = (x1 + x0) / 2 - (x2 - x0) / 2;
-				x1 = x0;
+				r.x += left->d.x / 2. + 1;
+				r.y += left->d.y / 2. + 1;
 			}
-			else
+			if (right)
 			{
-				x1 = (x2 + x0) / 2 - (x1 - x0) / 2;
-				x2 = x0;
+				r.x += right->d.x / 2. + 1;
+				r.y += right->d.y / 2. + 1;
 			}
-
-			printBlock(q->t0, q->center, &x1, y, s, ax, print);
-			printBlock(q->t1, q->right, &x2, y, s, ax, print);
-
-			if (print)
-				printf("<line x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" style=\"stroke:rgb(0,0,0);stroke-width:.25\"/>\n", x0, *x, h, h);
+			return r;
 		}
 
-		return false;
+		case Literal:
+			return (struct Size) {.x = 1, .y = 1};
 	}
+
+	fprintf(stderr, "Invalid operation: %d\n", t);
+	abort();
+}
+
+void sizeExpression(YYSTYPE q)
+{
+	if (q == NULL)
+		return;
+	
+	sizeExpression(q->left);
+	sizeExpression(q->right);
+
+	q->d = getSizes(q->t, q->left, q->right);
 }
 
 void printSVG(YYSTYPE q)
 {
+	sizeExpression(q);
+
 	puts("<?xml version=\"1.0\" standalone=\"no\"?>");
 	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
+
 	puts("<g transform=\"translate(50, 200) scale(8)\" font-family=\"monospace\">");
 
-	double x = 0, y = 0, s = 1;
-	printExpression(q, &x, &y, &s, true);
+	// double x = 0, y = 0, s = 1;
+	// printExpression(q, &x, &y, &s, true);
 
 	puts("</g>");
 	puts("</svg>");
