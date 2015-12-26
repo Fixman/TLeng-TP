@@ -127,6 +127,9 @@ struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 
 		case Parentheses:
 			return (struct Size) {.x = left->d.x + 9, .ny = left->d.ny - .5, .my = left->d.my + .5};
+
+		case Division:
+			return (struct Size) {.x = fmax(left->d.x, right->d.x) * .8, .ny = left->d.ny * .8 - left->d.my - 3, .my = right->d.my * .8 - right->d.ny - 5};
 	}
 
 	fprintf(stderr, "Invalid operation under calculate: %d\n", t);
@@ -181,13 +184,23 @@ void printExpression(YYSTYPE q)
 			printf("<text transform=\"scale(1 %lf) translate(0 %lf)\">(</text>", height, height / 2);
 			transformExpression(q->left, 5, 0, 1);
 			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>", height, q->left->d.x + 3, height / 2);
-
-			// printExpression(q->left);
 			break;
 		}
+
+		case Division:
+		{
+			transformExpression(q->left, (q->d.x - q->left->d.x * .8) / 2, -q->left->d.my - 3 - 1, .8);
+			printf("<line stroke-width=\"0.3\" stroke=\"black\" x1=\"0\" x2=\"%lf\" y1=\"-3\" y2=\"-3\" />\n", q->d.x);
+			transformExpression(q->right, (q->d.x - q->right->d.x * .8) / 2, -q->right->d.ny - 3 + 1, .8);
+			break;
+		}
+
+		default:
+			fprintf(stderr, "Invalid operation under print: %d\n", q->t);
+			abort();
 	}
 
-	if (q->t != Concat)
+	if (0 && q->t != Concat)
 	{
 		printf("<line stroke-width=\".1\" stroke=\"%s\" x1=\"0\" x2=\"%lf\" y1=\"%lf\" y2=\"%lf\" />\n", colors[q->t], q->d.x, q->d.ny, q->d.ny);
 		printf("<line stroke-width=\".1\" stroke=\"%s\" x1=\"0\" x2=\"%lf\" y1=\"%lf\" y2=\"%lf\" />\n", colors[q->t], q->d.x, q->d.my, q->d.my);
