@@ -15,9 +15,12 @@ enum Operation
 	Division
 };
 
+char *colors[] = {"black", "red", "blue", "green", "purple"};
+
 struct Size
 {
-	double x, y;
+	double x;
+	double ny, my;
 };
 
 struct Expression
@@ -69,7 +72,7 @@ g:	  h T_CARET h { $$ = buildExpression(Concat, $1, buildExpression(Caretunder, 
 	| h T_UNDER h T_CARET h { $$ = buildExpression(Concat, $1, buildExpression(Caretunder, $5, $3)); }
 	| h
 
-h:	  T_OPENPAREN e T_CLOSEPAREN { $$ = buildExpression(Parentheses, $1, $3); }
+h:	  T_OPENPAREN e T_CLOSEPAREN { $$ = buildExpression(Parentheses, $2, NULL); }
 	| T_OPENBRACKET e T_CLOSEBRACKET { $$ = $2; }
 	| T_ID { $$ = buildToken(yytext[0]); }
 
@@ -101,26 +104,29 @@ struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 	switch (t)
 	{
 		case Literal:
-			return (struct Size) {.x = 7, .y = 7};
+			return (struct Size) {.x = 7, .ny = -6, .my = 0};
 
 		case Concat:
-			return (struct Size) {.x = left->d.x + right->d.x, .y = left->d.y + right->d.y};
+			return (struct Size) {.x = left->d.x + right->d.x, .ny = fmin(left->d.ny, right->d.ny), .my = fmax(left->d.my, right->d.my)};
 
 		case Caretunder:
 		{
 			struct Size r = {0, 0};
 			if (left)
 			{
-				r.x += left->d.x / 2. + 1;
-				r.y += left->d.y / 2. + 1;
+				r.x = fmax(r.x, left->d.x * .75);
+				r.ny = left->d.ny * .75 - 6;
 			}
 			if (right)
 			{
-				r.x += right->d.x / 2. + 1;
-				r.y += right->d.y / 2. + 1;
+				r.x = fmax(r.x, right->d.x * .75);
+				r.my = right->d.my * .75 + 5;
 			}
 			return r;
 		}
+
+		case Parentheses:
+			return (struct Size) {.x = left->d.x + 9, .ny = left->d.ny - .5, .my = left->d.my + .5};
 	}
 
 	fprintf(stderr, "Invalid operation under calculate: %d\n", t);
@@ -140,6 +146,9 @@ void sizeExpression(YYSTYPE q)
 
 void transformExpression(YYSTYPE q, double dx, double dy, double ds)
 {
+	if (q == NULL)
+		return;
+
 	printf("<g transform=\"translate(%lf %lf) scale(%lf)\">\n", dx, dy, ds);
 	printExpression(q);
 	printf("</g>\n");
@@ -166,9 +175,22 @@ void printExpression(YYSTYPE q)
 			transformExpression(q->right, 0, 5, .75);
 			break;
 
-		default:
-			fprintf(stderr, "Invalid operation under print: %d\n", q->t);
+		case Parentheses:
+		{
+			double height = (q->d.my - q->d.ny) / 6;
+			printf("<text transform=\"scale(1 %lf) translate(0 %lf)\">(</text>", height, height / 2);
+			transformExpression(q->left, 5, 0, 1);
+			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>", height, q->left->d.x + 3, height / 2);
+
+			// printExpression(q->left);
 			break;
+		}
+	}
+
+	if (q->t != Concat)
+	{
+		printf("<line stroke-width=\".1\" stroke=\"%s\" x1=\"0\" x2=\"%lf\" y1=\"%lf\" y2=\"%lf\" />\n", colors[q->t], q->d.x, q->d.ny, q->d.ny);
+		printf("<line stroke-width=\".1\" stroke=\"%s\" x1=\"0\" x2=\"%lf\" y1=\"%lf\" y2=\"%lf\" />\n", colors[q->t], q->d.x, q->d.my, q->d.my);
 	}
 }
 
