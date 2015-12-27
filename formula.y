@@ -126,10 +126,10 @@ struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 		}
 
 		case Parentheses:
-			return (struct Size) {.x = left->d.x + 9, .ny = -fmax(abs(left->d.ny), abs(left->d.my)), .my = fmax(abs(left->d.ny), abs(left->d.my))};
+			return (struct Size) {.x = left->d.x + 9, .ny = left->d.ny - 4, .my = left->d.my + 4};
 
 		case Division:
-			return (struct Size) {.x = fmax(left->d.x, right->d.x) * .8, .ny = left->d.ny * .8 - left->d.my - 3.5, .my = right->d.my * .8 - right->d.ny - 1.5};
+			return (struct Size) {.x = fmax(left->d.x, right->d.x) * .8, .ny = left->d.ny * .8 - left->d.my - 4, .my = right->d.my * .8 - right->d.ny - 0.5};
 	}
 
 	fprintf(stderr, "Invalid operation under calculate: %d\n", t);
@@ -180,18 +180,18 @@ void printExpression(YYSTYPE q)
 
 		case Parentheses:
 		{
-			double height = (q->d.my - q->d.ny) / 9;
+			double height = (q->d.my - q->d.ny) / 10;
 			printf("<text transform=\"scale(1 %lf) translate(0 %lf)\">(</text>", height, height / 2);
 			transformExpression(q->left, 5, 0, 1);
-			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>", height, q->left->d.x + 3, height / 2);
+			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>", height, q->left->d.x + 4, height / 2);
 			break;
 		}
 
 		case Division:
 		{
-			transformExpression(q->left, (q->d.x - q->left->d.x * .8) / 2, -q->left->d.my * .8 - 3.5, .8);
+			transformExpression(q->left, (q->d.x - q->left->d.x * .8) / 2, -q->left->d.my * .8 - 4, .8);
 			printf("<line stroke-width=\"0.3\" stroke=\"black\" x1=\"0\" x2=\"%lf\" y1=\"-3\" y2=\"-3\" />\n", q->d.x);
-			transformExpression(q->right, (q->d.x - q->right->d.x * .8) / 2, -q->right->d.ny * .8 - 1.5, .8);
+			transformExpression(q->right, (q->d.x - q->right->d.x * .8) / 2, -q->right->d.ny * .8 - 0.5, .8);
 			break;
 		}
 
@@ -200,7 +200,7 @@ void printExpression(YYSTYPE q)
 			exit(1);
 	}
 
-	if (debug && (q->t == Parentheses || q->t == Division))
+	if (debug && q->t != Concat)
 	{
 		const char *colors[] = {"black", "red", "blue", "green", "purple"};
 
@@ -217,7 +217,7 @@ void printSVG(YYSTYPE q)
 	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
 
-	printf("<g transform=\"translate(50, %lf) scale(8)\" font-family=\"monospace\">\n", 300 - q->d.ny);
+	printf("<g transform=\"translate(50, %lf) scale(7)\" font-family=\"monospace\">\n", 300 - q->d.ny);
 
 	printExpression(q);
 
