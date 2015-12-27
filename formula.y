@@ -15,8 +15,6 @@ enum Operation
 	Division
 };
 
-char *colors[] = {"black", "red", "blue", "green", "purple"};
-
 struct Size
 {
 	double x;
@@ -78,6 +76,8 @@ h:	  T_OPENPAREN e T_CLOSEPAREN { $$ = buildExpression(Parentheses, $2, NULL); }
 
 %%
 
+bool debug = false;
+
 YYSTYPE buildToken(char c)
 {
 	YYSTYPE r = malloc(sizeof (struct Expression));
@@ -126,14 +126,14 @@ struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 		}
 
 		case Parentheses:
-			return (struct Size) {.x = left->d.x + 9, .ny = left->d.ny - .5, .my = left->d.my + .5};
+			return (struct Size) {.x = left->d.x + 9, .ny = -fmax(abs(left->d.ny), abs(left->d.my)), .my = fmax(abs(left->d.ny), abs(left->d.my))};
 
 		case Division:
-			return (struct Size) {.x = fmax(left->d.x, right->d.x) * .8, .ny = left->d.ny * .8 - left->d.my - 3, .my = right->d.my * .8 - right->d.ny - 5};
+			return (struct Size) {.x = fmax(left->d.x, right->d.x) * .8, .ny = left->d.ny * .8 - left->d.my - 3.5, .my = right->d.my * .8 - right->d.ny - 1.5};
 	}
 
 	fprintf(stderr, "Invalid operation under calculate: %d\n", t);
-	abort();
+	exit(1);
 }
 
 void sizeExpression(YYSTYPE q)
@@ -180,7 +180,7 @@ void printExpression(YYSTYPE q)
 
 		case Parentheses:
 		{
-			double height = (q->d.my - q->d.ny) / 6;
+			double height = (q->d.my - q->d.ny) / 9;
 			printf("<text transform=\"scale(1 %lf) translate(0 %lf)\">(</text>", height, height / 2);
 			transformExpression(q->left, 5, 0, 1);
 			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>", height, q->left->d.x + 3, height / 2);
@@ -189,19 +189,21 @@ void printExpression(YYSTYPE q)
 
 		case Division:
 		{
-			transformExpression(q->left, (q->d.x - q->left->d.x * .8) / 2, -q->left->d.my - 3 - 1, .8);
+			transformExpression(q->left, (q->d.x - q->left->d.x * .8) / 2, -q->left->d.my * .8 - 3.5, .8);
 			printf("<line stroke-width=\"0.3\" stroke=\"black\" x1=\"0\" x2=\"%lf\" y1=\"-3\" y2=\"-3\" />\n", q->d.x);
-			transformExpression(q->right, (q->d.x - q->right->d.x * .8) / 2, -q->right->d.ny - 3 + 1, .8);
+			transformExpression(q->right, (q->d.x - q->right->d.x * .8) / 2, -q->right->d.ny * .8 - 1.5, .8);
 			break;
 		}
 
 		default:
 			fprintf(stderr, "Invalid operation under print: %d\n", q->t);
-			abort();
+			exit(1);
 	}
 
-	if (0 && q->t != Concat)
+	if (debug && (q->t == Parentheses || q->t == Division))
 	{
+		const char *colors[] = {"black", "red", "blue", "green", "purple"};
+
 		printf("<line stroke-width=\".1\" stroke=\"%s\" x1=\"0\" x2=\"%lf\" y1=\"%lf\" y2=\"%lf\" />\n", colors[q->t], q->d.x, q->d.ny, q->d.ny);
 		printf("<line stroke-width=\".1\" stroke=\"%s\" x1=\"0\" x2=\"%lf\" y1=\"%lf\" y2=\"%lf\" />\n", colors[q->t], q->d.x, q->d.my, q->d.my);
 	}
@@ -215,7 +217,7 @@ void printSVG(YYSTYPE q)
 	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
 
-	puts("<g transform=\"translate(50, 200) scale(8)\" font-family=\"monospace\">");
+	printf("<g transform=\"translate(50, %lf) scale(8)\" font-family=\"monospace\">\n", 300 - q->d.ny);
 
 	printExpression(q);
 
@@ -229,7 +231,10 @@ void yyerror(const char* s)
 	exit(1);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+	if (argc > 1 && !strcmp(argv[1], "--debug"))
+		debug = true;
+
 	yyparse();
 }
