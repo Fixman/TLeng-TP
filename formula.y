@@ -126,7 +126,7 @@ struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 		}
 
 		case Parentheses:
-			return (struct Size) {.x = left->d.x + 9, .ny = left->d.ny - 4, .my = left->d.my + 4};
+			return (struct Size) {.x = left->d.x + 11, .ny = left->d.ny - 2, .my = left->d.my + 4};
 
 		case Division:
 			return (struct Size) {.x = fmax(left->d.x, right->d.x) * .8, .ny = left->d.ny * .8 - left->d.my - 4, .my = right->d.my * .8 - right->d.ny - 0.5};
@@ -182,8 +182,8 @@ void printExpression(YYSTYPE q)
 		{
 			double height = (q->d.my - q->d.ny) / 10;
 			printf("<text transform=\"scale(1 %lf) translate(0 %lf)\">(</text>", height, height / 2);
-			transformExpression(q->left, 5, 0, 1);
-			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>", height, q->left->d.x + 4, height / 2);
+			transformExpression(q->left, 6, 0, 1);
+			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>", height, q->left->d.x + 5, height / 2);
 			break;
 		}
 
