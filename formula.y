@@ -6,6 +6,7 @@
 #include <math.h>
 #include <assert.h>
 
+// Operaciones posibles.
 enum Operation
 {
 	Literal,
@@ -15,19 +16,21 @@ enum Operation
 	Division
 };
 
+// El tamano de una expresion.
 struct Size
 {
-	double x;
-	double ny, my;
+	double x; // Ancho
+	double ny, my; // Altura baja y altura alta.
 };
 
+// Una expresion.
 struct Expression
 {
-	struct Expression *left, *right;
-	char c;
+	struct Expression *left, *right; // Expresiones hijos. Pueden ser NULL.
+	char c; // Caracter que representa, si es de tipo Literal.
 
-	enum Operation t;
-	struct Size d;
+	enum Operation t; // Tipo de esta expresion.
+	struct Size d; // Tamano de la expresion. Asignada por sizeExpression.
 };
 
 extern int yylex();
@@ -56,7 +59,7 @@ void yyerror(const char *);
 
 %%
 
-init: e T_ENDLINE { printSVG($$); }
+init: e T_ENDLINE { sizeExpression($$); printSVG($$); }
 
 e:	  f T_DIV e { $$ = buildExpression(Division, $1, $3); }
 	| f
@@ -78,6 +81,7 @@ h:	  T_OPENPAREN e T_CLOSEPAREN { $$ = buildExpression(Parentheses, $2, NULL); }
 
 bool debug = false;
 
+// Devuelve un nodo hoja, que tiene cierto caracter.
 YYSTYPE buildToken(char c)
 {
 	YYSTYPE r = malloc(sizeof (struct Expression));
@@ -88,6 +92,7 @@ YYSTYPE buildToken(char c)
 	return r;
 }
 
+// Devuelve una expresion representada por cierta operacion, y con dos hijos.
 YYSTYPE buildExpression(enum Operation op, YYSTYPE left, YYSTYPE right)
 {
 	YYSTYPE r = malloc(sizeof (struct Expression));
@@ -99,6 +104,8 @@ YYSTYPE buildExpression(enum Operation op, YYSTYPE left, YYSTYPE right)
 	return r;
 }
 
+// Devuelve el tamano de un nodo que representa cierta operacion, y tiene
+// ciertos hijos. Los hijos ya deben tener su tamano calculado.
 struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 {
 	switch (t)
@@ -136,6 +143,8 @@ struct Size getSizes(enum Operation t, YYSTYPE left, YYSTYPE right)
 	exit(1);
 }
 
+// Calcula el tamano de los hijos de un nodo, y usa estos valores para
+// asignarle un tamano a este nodo.
 void sizeExpression(YYSTYPE q)
 {
 	if (q == NULL)
@@ -147,6 +156,7 @@ void sizeExpression(YYSTYPE q)
 	q->d = getSizes(q->t, q->left, q->right);
 }
 
+// Imprime un nodo con cierta transformacion en x, y, y tamano.
 void transformExpression(YYSTYPE q, double dx, double dy, double ds)
 {
 	if (q == NULL)
@@ -157,6 +167,7 @@ void transformExpression(YYSTYPE q, double dx, double dy, double ds)
 	printf("</g>\n");
 }
 
+// Imprime un nodo y sus hijos.
 void printExpression(YYSTYPE q)
 {
 	if (q == NULL)
@@ -181,19 +192,17 @@ void printExpression(YYSTYPE q)
 		case Parentheses:
 		{
 			double height = (q->d.my - q->d.ny) / 10;
-			printf("<text transform=\"scale(1 %lf) translate(0 %lf)\">(</text>", height, height / 2);
+			printf("<text transform=\"scale(1 %lf) translate(0 %lf)\">(</text>\n", height, height / 2);
 			transformExpression(q->left, 6, 0, 1);
-			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>", height, q->left->d.x + 5, height / 2);
+			printf("<text transform=\"scale(1 %lf) translate(%lf %lf)\">)</text>\n", height, q->left->d.x + 5, height / 2);
 			break;
 		}
 
 		case Division:
-		{
 			transformExpression(q->left, (q->d.x - q->left->d.x * .8) / 2, -q->left->d.my * .8 - 4, .8);
 			printf("<line stroke-width=\"0.3\" stroke=\"black\" x1=\"0\" x2=\"%lf\" y1=\"-3\" y2=\"-3\" />\n", q->d.x);
 			transformExpression(q->right, (q->d.x - q->right->d.x * .8) / 2, -q->right->d.ny * .8 - 0.5, .8);
 			break;
-		}
 
 		default:
 			fprintf(stderr, "Invalid operation under print: %d\n", q->t);
@@ -209,10 +218,10 @@ void printExpression(YYSTYPE q)
 	}
 }
 
+// Imprime el SVG correspondiente a un arbol sintactico con raiz q. El tamano
+// de q y sus hijos ya debe estar calculado.
 void printSVG(YYSTYPE q)
 {
-	sizeExpression(q);
-
 	puts("<?xml version=\"1.0\" standalone=\"no\"?>");
 	puts("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">");
 	puts("<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">");
@@ -225,12 +234,14 @@ void printSVG(YYSTYPE q)
 	puts("</svg>");
 }
 
+// Indica que hubo un error en el parseo.
 void yyerror(const char* s)
 {
 	fprintf(stderr, "Parse error: %s\n", s);
 	exit(1);
 }
 
+// Parsea la entrada, y activa el flag de debug si ese es el argumento.
 int main(int argc, char *argv[])
 {
 	if (argc > 1 && !strcmp(argv[1], "--debug"))
