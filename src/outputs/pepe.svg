@@ -1,0 +1,12 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+<g transform="translate(50, 200) scale(8)" font-family="monospace">
+<text dominant-baseline="mathematical" transform="translate(0.00, 0.00) scale(1.00)">a</text>
+<text dominant-baseline="mathematical" transform="translate(7.00, -5.00) scale(0.50)">b</text>
+<text dominant-baseline="mathematical" transform="translate(11.00, -5.00) scale(0.50)">+</text>
+<text dominant-baseline="mathematical" transform="translate(15.00, -5.00) scale(0.50)">c</text>
+<text dominant-baseline="mathematical" transform="translate(19.00, 0.00) scale(1.00)">+</text>
+<text dominant-baseline="mathematical" transform="translate(27.00, 0.00) scale(1.00)">d</text>
+</g>
+</svg>

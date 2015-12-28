@@ -1,0 +1,84 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+<g transform="translate(50, 308.800000) scale(7)" font-family="monospace">
+<g transform="translate(3.920000 -4.000000) scale(0.800000)">
+<text>a</text>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="13.440000" y1="-3" y2="-3" />
+<g transform="translate(0.000000 6.540000) scale(0.800000)">
+<g transform="translate(5.600000 -4.000000) scale(0.800000)">
+<text>b</text>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="16.800000" y1="-3" y2="-3" />
+<g transform="translate(0.000000 9.420000) scale(0.800000)">
+<g transform="translate(0.000000 -4.000000) scale(0.800000)">
+<text>c</text>
+<g transform="translate(7.000000 0.000000) scale(1.000000)">
+<g transform="translate(0.000000 -6.000000) scale(0.750000)">
+<text>z</text>
+</g>
+</g>
+<g transform="translate(12.250000 0.000000) scale(1.000000)">
+<text>+</text>
+<g transform="translate(7.000000 0.000000) scale(1.000000)">
+<text>k</text>
+</g>
+</g>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="21.000000" y1="-3" y2="-3" />
+<g transform="translate(5.482400 6.540000) scale(0.800000)">
+<g transform="translate(3.472000 -4.000000) scale(0.800000)">
+<text>d</text>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="12.544000" y1="-3" y2="-3" />
+<g transform="translate(0.000000 6.540000) scale(0.800000)">
+<g transform="translate(5.040000 -4.000000) scale(0.800000)">
+<text>e</text>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="15.680000" y1="-3" y2="-3" />
+<g transform="translate(0.000000 6.540000) scale(0.800000)">
+<g transform="translate(0.000000 -4.000000) scale(0.800000)">
+<text>f</text>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="5.600000" y1="-3" y2="-3" />
+<g transform="translate(0.560000 6.540000) scale(0.800000)">
+<g transform="translate(0.000000 -4.000000) scale(0.800000)">
+<text>g</text>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="5.600000" y1="-3" y2="-3" />
+<g transform="translate(0.560000 6.540000) scale(0.800000)">
+<g transform="translate(0.000000 -4.000000) scale(0.800000)">
+<text>h</text>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="5.600000" y1="-3" y2="-3" />
+<g transform="translate(0.560000 6.540000) scale(0.800000)">
+<g transform="translate(0.000000 -4.000000) scale(0.800000)">
+<text>i</text>
+</g>
+<line stroke-width="0.3" stroke="black" x1="0" x2="5.600000" y1="-3" y2="-3" />
+<g transform="translate(0.000000 4.300000) scale(0.800000)">
+<text>j</text>
+</g>
+</g>
+</g>
+</g>
+<g transform="translate(5.600000 0.000000) scale(1.000000)">
+<text>+</text>
+<g transform="translate(7.000000 0.000000) scale(1.000000)">
+<text>t</text>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+</g>
+<g transform="translate(13.440000 0.000000) scale(1.000000)">
+<text>+</text>
+<g transform="translate(7.000000 0.000000) scale(1.000000)">
+<text>k</text>
+</g>
+</g>
+</g>
+</svg>
